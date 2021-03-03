@@ -175,7 +175,7 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  return ~(x&y)&~(~x&~y);
 }
 /* 
  * byteSwap - swaps the nth byte and the mth byte
@@ -187,10 +187,24 @@ int bitXor(int x, int y) {
  *  Rating: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+  int n8 = n<<3;
+  int m8 = m<<3;
+  int lifem8 = 0xff << m8;
+  int lifen8 = 0xff << n8;
+  int xmtmp = x & (lifem8);
+  int xntmp = x & (lifen8);
+  x = x & ~(lifem8);
+  x = x & ~(lifen8);
+  xmtmp = (xmtmp>>m8) & 0xff;
+  xntmp = (xntmp>>n8) & 0xff;
+  xmtmp = xmtmp << n8;
+  xntmp = xntmp << m8;
+  x = x | xmtmp;
+  x = x | xntmp;
+    return x;
 }
 /* 
- * rotateLeft - Rotate x to the left by n
+ * rotateLeft - Rotate x to the left by nf
  *   Can assume that 0 <= n <= 31
  *   Examples: rotateLeft(0x87654321,4) = 0x76543218
  *   Legal ops: ~ & ^ | + << >> !
@@ -198,7 +212,15 @@ int byteSwap(int x, int n, int m) {
  *   Rating: 3 
  */
 int rotateLeft(int x, int n) {
-  return 2;
+  int cn = ~n+1;
+  int zezero = ~0x0<<(32+cn);
+  int zeroro = ~(~0x0<<n);
+  int xtmp = (x&zezero)>>(32+cn);
+
+  xtmp = xtmp & (zeroro);
+  x = x<<n;
+  x = x | xtmp;
+  return x;
 }
 /*
  * leftBitCount - returns count of number of consective 1's in
@@ -209,7 +231,42 @@ int rotateLeft(int x, int n) {
  *   Rating: 4
  */
 int leftBitCount(int x) {
-  return 2;
+  int n = !(~x);
+  int tmp = x;
+  int partition = 0;
+  int chbool = 0;
+  int range = 0;
+  int mask = (~0)<<16;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition << 4;
+  tmp = (tmp<<(chbool));
+  n = n + (chbool);
+  mask = mask << 8;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition << 3;
+  tmp = (tmp<<(chbool));
+  n = n + (chbool);
+  mask = mask << 4;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition << 2;
+  tmp = (tmp<<(chbool));
+  n = n + (chbool);
+  mask = mask << 2;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition << 1;
+  tmp = tmp<<(chbool);
+  n = n + (chbool);
+  mask = mask << 1;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition;
+  n = n + (chbool);
+
+  return n;
 }
 /* 
  * absVal - absolute value of x
@@ -220,7 +277,8 @@ int leftBitCount(int x) {
  *   Rating: 4
  */
 int absVal(int x) {
-  return 2;
+  int ppnn = x>>31;
+  return (ppnn + x)^(ppnn);
 }
 /* 
  * TMax - return maximum two's complement integer 
@@ -229,7 +287,7 @@ int absVal(int x) {
  *   Rating: 1
  */
 int tmax(void) {
-  return 2;
+  return ~(0x1<<31);
 }
 /* 
  * fitsShort - return 1 if x can be represented as a 
@@ -240,7 +298,9 @@ int tmax(void) {
  *   Rating: 1
  */
 int fitsShort(int x) {
-  return 2;
+  int del = (x<<16)>>16; //express + : 0000 0xxx - : 1111 1xxx+1 
+  int aftfit = del ^ x;
+  return !aftfit; //0000 1xxx -> 1111 1xxx, 
 }
 /* 
  * rempwr2 - Compute x%(2^n), for 0 <= n <= 30
@@ -251,7 +311,14 @@ int fitsShort(int x) {
  *   Rating: 3
  */
 int rempwr2(int x, int n) {
-    return 2;
+  int sign = x>>31;
+  int pone = !(sign); //+ : 1, -:0
+  int deler = ~(~0<<n);
+  int pos = x & deler;
+  int n2 = (!(!pos))<<n;
+  int cn2 = ~n2 +1;
+  int isneg = cn2 & sign;
+    return pos + isneg;
 }
 /* 
  * sign - return 1 if positive, 0 if zero, and -1 if negative
@@ -262,7 +329,9 @@ int rempwr2(int x, int n) {
  *  Rating: 2
  */
 int sign(int x) {
-    return 2;
+   int mbool = !(!x);
+   int tmp = x>>31;
+    return mbool|tmp;
 }
 /* 
  * isNonNegative - return 1 if x >= 0, return 0 otherwise 
@@ -272,7 +341,7 @@ int sign(int x) {
  *   Rating: 3
  */
 int isNonNegative(int x) {
-  return 2;
+  return !(x>>31);
 }
 /* 
  * isGreater - if x > y  then return 1, else return 0 
@@ -282,9 +351,15 @@ int isNonNegative(int x) {
  *   Rating: 3
  */
 int isGreater(int x, int y) {
-  return 2;
+  int sx = x>>31;
+  int sy = y>>31;
+  int cx = ~x+1;
+  int sum = y + cx; //y - x  
+  int ssum = (sum>>31)&1; //y>=0 -> 0 -> 
+  int seq = !((sx) ^ (sy)); //same 1 diff 0
+  return ((seq)&(ssum))|((!seq)&(sy&1));
 }
-/* howManyBits - return the minimum number of bits required to represent x in
+/* howManyBits - return the minimum number o./f bits required to represent x in
  *             two's complement
  *  Examples: howManyBits(12) = 5
  *            howManyBits(298) = 10
@@ -297,7 +372,46 @@ int isGreater(int x, int y) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  int partition;
+  int smove = x>>1;
+  int tmp = (x & ~smove) | (~x & smove);
+  int chbool = 0;
+  int mask = (~0)<<16;
+  int n = !(tmp);
+  int cn = 0;
+
+  tmp = ~tmp;
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition << 4;
+  tmp = (tmp<<(chbool));
+  n = n + (chbool);
+  mask = mask << 8;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition << 3;
+  tmp = (tmp<<(chbool));
+  n = n + (chbool);
+  mask = mask << 4;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition << 2;
+  tmp = (tmp<<(chbool));
+  n = n + (chbool);
+  mask = mask << 2;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition << 1;
+  tmp = tmp<<(chbool);
+  n = n + (chbool);
+  mask = mask << 1;
+
+  partition = ((tmp&mask)+(~mask)+1);
+  chbool = !partition;
+  n = n + (chbool);
+  
+  cn = ~n + 1;
+
+  return 33+ cn;
 }
 /* 
  * float_abs - Return bit-level equivalent of absolute value of f for
@@ -311,7 +425,16 @@ int howManyBits(int x) {
  *   Rating: 2
  */
 unsigned float_abs(unsigned uf) {
-  return 2;
+  unsigned absf = uf & ~(1<<31);
+  int plusinf = 0x7f800000;
+  if(absf > plusinf)
+  {
+    return uf;
+  }
+  else
+  {
+  return absf;
+  }
 }
 /* 
  * float_f2i - Return bit-level equivalent of expression (int) f
@@ -326,7 +449,54 @@ unsigned float_abs(unsigned uf) {
  *   Rating: 4
  */
 int float_f2i(unsigned uf) {
-  return 2;
+  int intvalue = 0;
+  int s = uf >> 31;
+  int e = uf >> 23;
+  int f = uf & 0x7fffff;
+  int norm = 0x1<<(e-0x7f);
+  e = e & 0xff;
+  if( e == 0xff)
+  {
+    return 0x80000000u;
+  }
+  if (e<0x7f)
+  {
+    return 0x0;
+  }
+  e = e - 0x7f;
+  intvalue = intvalue + norm;
+  if(e>22 && e<31)
+  {
+    intvalue = intvalue + (f << (e-23));
+    if(s == 1)
+    {
+        return -intvalue;
+    }
+    else
+    {
+      return intvalue;
+    }
+  }
+  else if(e <= 23 && e>=0)
+  {
+    intvalue = intvalue + (f >> (23-e));
+    if(s == 1)
+    {
+        return -intvalue;
+    }
+    else
+    {
+      return intvalue;
+    }
+  }
+  else if(e>=31)
+  {
+    return 0x80000000u;
+  }
+  else
+  {
+  return 0x80000000u;
+  }
 }
 /* 
  * float_half - Return bit-level equivalent of expression 0.5*f for
@@ -340,5 +510,41 @@ int float_f2i(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_half(unsigned uf) {
-  return 2;
+  int e = uf >> 23;
+  int s = uf >> 31;
+  int f = uf & 0x7FFFFF;
+  int edel = 0x7f800000;
+  int sdel = 0x80000000;
+  int fdel = 0x007fffff;
+  int value = 0;
+  int exp = uf & edel;
+  int sign = uf & sdel;
+  int frac = uf & fdel;
+  int secbit = (uf & 0x3) >> 1;
+  int firbit = (uf & 0x1);
+  int havetoround = 0;
+  if((secbit == 1) && (firbit == 1))
+  {
+    havetoround = 1;
+  }
+  e = e & 0xff;
+  if(e == 0xff)
+  {
+    return uf;
+  }
+  else if(e == 0x0 || e == 0x01)
+  {
+    frac = exp + frac;
+    frac = (uf & 0x00ffffff) >> 1;
+    if(havetoround == 1)
+    {
+      frac = frac + 1;
+    }
+    value = frac;
+  }
+  else
+  {
+  value = (((exp - 1)) & edel) + frac;
+  }
+  return sign + value;
 }
